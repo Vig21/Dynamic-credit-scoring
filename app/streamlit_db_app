@@ -1,0 +1,26 @@
+import streamlit as st
+import pandas as pd
+import joblib
+import shap
+import matplotlib.pyplot as plt
+
+st.set_page_config(page_title="Credit Risk Dashboard", layout="wide")
+st.title("🧮 Dynamic Credit Scoring Dashboard")
+
+uploaded_file = st.file_uploader("Upload Customer Data CSV", type="csv")
+
+if uploaded_file:
+    df = pd.read_csv(uploaded_file)
+    model = joblib.load("data/xgb_model.pkl")
+    df["risk_score"] = model.predict_proba(df)[:, 1]
+
+    st.subheader("Customer Risk Scores")
+    st.dataframe(df[["risk_score"]].sort_values(by="risk_score", ascending=False))
+
+    st.subheader("SHAP Feature Impact for First Record")
+    explainer = shap.Explainer(model)
+    shap_values = explainer(df.drop(columns=["risk_score"]))
+
+    st.set_option('deprecation.showPyplotGlobalUse', False)
+    shap.plots.waterfall(shap_values[0])
+    st.pyplot(bbox_inches='tight')
